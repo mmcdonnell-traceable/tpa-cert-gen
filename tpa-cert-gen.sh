@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [[ $EUID -ne 0 ]]; then
+  echo2 "This script must be run as root."
+  exit 1
+fi
+
 # Unsets
 unset -v TPAHOST
 unset -v OPENSSLCNF
