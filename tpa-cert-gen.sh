@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-if [[ $EUID -ne 0 ]]; then
-  echo2 "This script must be run as root."
-  exit 1
-fi
-
 # Unsets
 unset -v TPAHOST
 unset -v OPENSSLCNF
@@ -73,7 +68,7 @@ function main() {
 
   generate_certs "${TPAHOST}" "${SANS}"
 
-  exit_stage_left ${EXIT_CLEAN}
+  exit_stage_left ${EXIT_CLEAN} "Cert Generation Complete!"
 }
 
 function add_to_sanlist() {
@@ -136,6 +131,15 @@ function generate_certs() {
   local CN=${1}
   local SANLIST=${2}
 
+  # Key Locations
+  local KEYROOT="${SCRIPTSDIR}/keys/${STDDATE}"
+  local ROOTCAKEY="${KEYROOT}/root_ca.key"
+  local ROOTCAPEM="${KEYROOT}/root_ca.pem"
+  local DOMAINKEY="${KEYROOT}/${CN}.key"
+  local DOMAINCSR="${KEYROOT}/${CN}.csr"
+  local DOMAINPEM="${KEYROOT}/${CN}.pem"
+
+  # SAN String
   local SANSTR="subjectAltName="
   SANLIST=($SANLIST)
   for IND in "${!SANLIST[@]}"; do
@@ -145,8 +149,21 @@ function generate_certs() {
     SANSTR="${SANSTR}DNS.$((${IND}+1)):${SANLIST[${IND}]}"
   done
 
-  local KEYROOT="${SCRIPTSDIR}/keys/${STDDATE}"
-  prompt_boolean MKDIRKEYS "  Would you like to create the new directory: ${KEYROOT}?" "Yes"
+  # File directory time
+  echo ""
+  echo "Preparing to create key files:"
+  echo "  Root CA Private Key File: ${ROOTCAKEY}"
+  echo "  Root CA Public Cert:    ${ROOTCAPEM}"
+  echo "  Domain Private Key File:  ${DOMAINKEY}"
+  echo "  Domain Public Cert File:  ${DOMAINCSR}"
+  echo "  Domain Cert Sig Req File: ${DOMAINPEM}"
+  echo ""
+  prompt_boolean MKDIRKEYS "Would you like to create the new directory: ${KEYROOT}?" "Yes"
+
+  # Cert Time
+  echo ""
+  echo "Generating TPA Certs!"
+
   if [ ${MKDIRKEYS} == "Y" ]; then
     mkdir -p ${KEYROOT}
   else
@@ -170,21 +187,6 @@ function generate_certs() {
       mkdir -p ${KEYROOT}
     fi
   fi
-
-  local ROOTCAKEY="${KEYROOT}/root_ca.key"
-  local ROOTCAPEM="${KEYROOT}/root_ca.pem"
-  local DOMAINKEY="${KEYROOT}/${CN}.key"
-  local DOMAINCSR="${KEYROOT}/${CN}.csr"
-  local DOMAINPEM="${KEYROOT}/${CN}.pem"
-
-  echo "Preparing to create key files:"
-  echo "  Root CA Private Key File: ${ROOTCAKEY}"
-  echo "  Root CA Public Cert:    ${ROOTCAPEM}"
-  echo "  Domain Private Key File:  ${DOMAINKEY}"
-  echo "  Domain Public Cert File:  ${DOMAINCSR}"
-  echo "  Domain Cert Sig Req File: ${DOMAINPEM}"
-
-  echo "Generating TPA Certs"
 
   # Generate Root CA
   echo "  1. Generating Root CA Private Key (${ROOTCAKEY})"
@@ -402,6 +404,10 @@ function validate_hostname() {
 
   echo ""
 }
+
+if [[ $EUID -ne 0 ]]; then
+  exit_stage_left ${EXIT_ERR} "This script must be run as root."
+fi
 
 while getopts "t:o:d:h" options; do         
   case "${options}" in
