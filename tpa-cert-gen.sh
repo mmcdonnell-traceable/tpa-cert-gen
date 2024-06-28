@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-if [[ $EUID -ne 0 ]]; then
-  echo2 "This script must be run as root."
-  exit 1
-fi
-
 # Unsets
 unset -v TPAHOST
 unset -v OPENSSLCNF
@@ -312,7 +307,7 @@ function prompt_choice() {
   if [[ ${MAX} -gt 1 ]]; then
     while [[ "${OPT}" -lt ${MIN} || "${OPT}" -gt ${MAX} ]]; do
       for i in "${!OPTIONS[@]}"; do
-        echo2 "$(($i+1))\t${OPTIONS[$i]}"
+        echo "$(($i+1))    ${OPTIONS[$i]}"
       done
       read -p "${MSG} " OPT
       if [[ "${OPT}" -ge ${MIN} && "${OPT}" -le ${MAX} ]]; then
