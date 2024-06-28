@@ -136,8 +136,6 @@ function generate_certs() {
   local CN=${1}
   local SANLIST=${2}
 
-  echo "${SANLIST}"; exit 1
-
   local SANSTR="subjectAltName="
   SANLIST=($SANLIST)
   for IND in "${!SANLIST[@]}"; do
